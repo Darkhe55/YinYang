@@ -1,0 +1,82 @@
+/* ════════════════════════════════════════════════════════════════
+   阴阳 —— 游戏专用皮肤
+   ════════════════════════════════════════════════════════════════ */
+
+:root {
+  --yy-ink: #24231f;
+  --yy-paper: #fffdf8;
+  --yy-board: #ece4d3;
+  --yy-board-line: #d4cbb9;
+}
+
+.board-svg .yy-board-bg {
+  fill: var(--yy-board);
+  stroke: var(--yy-board-line);
+  stroke-width: 1.5;
+}
+
+.board-svg .yy-stone {
+  stroke: #cfc6b5;
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.board-svg .yy-stone.empty {
+  fill: #fbf7ee;
+  stroke: #d9d2c3;
+}
+
+.board-svg .yy-stone.black {
+  fill: var(--yy-ink);
+  stroke: var(--yy-ink);
+}
+
+.board-svg .yy-stone.white {
+  fill: #ffffff;
+  stroke: #c9c0ae;
+}
+
+.board-svg .yy-stone.given {
+  stroke-width: 1.5;
+}
+
+.board-svg .yy-given-dot.on-black {
+  fill: #fffdf8;
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+.board-svg .yy-given-dot.on-white {
+  fill: var(--yy-ink);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.board-svg .yy-error {
+  fill: rgba(194, 59, 46, 0.15);
+  stroke: var(--error);
+  stroke-width: 2.5;
+  pointer-events: none;
+}
+
+/* 命中层在棋子之上；悬停时透出一点墨色 */
+.board-svg .cell-hit {
+  pointer-events: all;
+}
+
+.board-svg .cell-hit:hover {
+  fill: rgba(31, 111, 92, 0.16);
+}
+
+/* 自定义题板里的黑白预览 */
+.custom-cell.v-black {
+  background: var(--yy-ink);
+  border-color: var(--yy-ink);
+  color: #fffdf8;
+}
+
+.custom-cell.v-white {
+  background: #fff;
+  border-color: #b7ae9a;
+  color: var(--yy-ink);
+}

@@ -1,0 +1,30 @@
+{
+  "name": "yinyang-puzzle",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "阴阳（Yin-Yang）逻辑谜题：黑白各自连通，禁止 2×2 同色。",
+  "puzzle": {
+    "port": 5179,
+    "comment": "dev server 端口（vite.config.ts / scripts/dev.mjs / scripts/ui-check.mjs 都读这里，是唯一来源）"
+  },
+  "scripts": {
+    "dev": "vite",
+    "start": "node scripts/dev.mjs",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "gen": "node scripts/gen-puzzles.mjs",
+    "check": "node scripts/check.mjs",
+    "ui-check": "node scripts/ui-check.mjs",
+    "verify": "node scripts/verify-game.mjs",
+    "audit": "node scripts/audit-logic.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.64.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.6"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
+  }
+}
