@@ -86,3 +86,40 @@ npm run check     # 审计题库
 npm run verify    # 参考解、逻辑回放与交互验证
 npm run audit     # 逐题审计逻辑解题
 ```
+
+## 图片识别导入
+
+用 Playwright + Edge 识别题面图片里的网格与黑白圆点（黑圈 = 黑格、白圈 = 白格），生成题库格式后预览 / 写入。
+
+```bash
+# 只识别 + 预览（不写入）
+npm run import-image -- 题面.png
+
+# 只识别网格与圆点
+npm run import-image -- 题面.png --dry
+
+# 求解 + 唯一性检查（大网格可能超时，会给出警告）
+npm run import-image -- 题面.png --verify
+
+# 追加到题库（写入 src/game/imported-puzzles.ts，npm run gen 不会覆盖）
+npm run import-image -- 题面.png --name "我的阴阳" --append
+```
+
+| 参数 | 说明 |
+|------|------|
+| `--name 名称` | 题库中显示的名称（默认「识图 · W×H」） |
+| `--series 系列` | 系列名（默认「图片导入」） |
+| `--difficulty 级别` | `easy` / `medium` / `hard` / `custom`（默认 `hard`） |
+| `--size N` | 正方形网格边长；默认自动识别 |
+| `--width N` / `--height N` | 非正方形题图的宽/高，可只给一边 |
+| `--swap` | 交换黑/白圆点的含义（黑圈看作白格） |
+| `--map 行,列=值` | 人工覆盖某格（行列从 1 开始，值 `0`/`1`/`2`），可重复或逗号分隔 |
+| `--append` | 写入 `src/game/imported-puzzles.ts` |
+| `--verify` | 求解并检查唯一解（超时会警告，不阻断导入） |
+| `--dry` | 只识别网格与圆点，不求解、不写入 |
+| `--max-nodes N` / `--timeout MS` | 唯一性搜索的节点 / 时间上限 |
+| `--edge PATH` | 指定 Edge 路径（默认自动探测） |
+
+识别流程：投影找贯穿整幅图的网格线 → 取最长等距线序列得到网格 → 每格中心暗度判断实心黑圈、圆环墨迹判断空心白圈 → 得到题面串。
+网格外的坐标标签等文字不会被误认为圆点。40×40 这类大题的求解/唯一性检查容易超时，此时只用「预览 + `--append`」即可导入，参考解留空。
+

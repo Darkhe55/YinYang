@@ -7,12 +7,13 @@
  */
 
 import { RAW_PUZZLES } from './puzzles-data'
+import { IMPORTED_PUZZLES } from './imported-puzzles'
 import { asYinPuzzle, decodeCells, type YinPuzzle, type YinState } from './types'
 
 export const builtinPuzzles: YinPuzzle[] = []
 const solutions = new Map<string, number[]>()
 
-for (const raw of RAW_PUZZLES) {
+for (const raw of [...RAW_PUZZLES, ...IMPORTED_PUZZLES]) {
   const size = raw.width * raw.height
   const givens = decodeCells(raw.board, size)
   if (!givens) {
