@@ -2,8 +2,8 @@
  * 阴阳 —— 棋盘状态
  */
 
-import type { GameState, HitTarget, Move, Puzzle } from '../core/types'
-import { asYinPuzzle, asYinState, decodeCells, encodeCells, EMPTY, WHITE, type YinState } from './types'
+import type { GameState, HitTarget, Move, Puzzle } from '../core/types.ts'
+import { asYinPuzzle, asYinState, decodeCells, encodeCells, EMPTY, WHITE, type YinState } from './types.ts'
 
 export function createEmptyState(puzzle: Puzzle): YinState {
   const p = asYinPuzzle(puzzle)

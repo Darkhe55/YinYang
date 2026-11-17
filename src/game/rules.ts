@@ -1,17 +1,18 @@
 /**
  * 阴阳 —— 规则引擎
  *
- * 两条规则：
+ * 三条安全规则（全部是「必然结论」，可安全用于生成、提示与逻辑回放）：
  *   R1  2×2 区域不能四格同色：若已有三格同色，第四格必为反色。
  *   R2  黑/白必须各自连通：若某色的一块连通区被反色完全包围，
  *       而该色在别处还存在，则这块区域里的空格都不能填该色。
- *
- * 这些规则都是「必然结论」，可安全用于唯一解生成、提示与逻辑回放。
+ *   R3  连通性割点：在「该色格 + 空格」组成的图里，若某个空格是割点，
+ *       去掉它会让同一连通块里的该色格分成两块，那么这一格必须填该色
+ *       （否则该色的两块永远连不起来）。对黑、白各做一遍。
  */
 
-import { BLACK, EMPTY, WHITE } from './types'
+import { BLACK, EMPTY, WHITE } from './types.ts'
 
-export type RuleKind = 'block' | 'connect'
+export type RuleKind = 'block' | 'connect' | 'cut'
 
 export type SetCallback = (index: number, value: number, rule: RuleKind) => void
 
@@ -187,6 +188,122 @@ export function propagate(
         }
       }
     }
+
+    // —— R3：连通性割点 ——
+    if (!cutPropagate(cells, w, h, onSet, () => (changed = true))) return false
+  }
+
+  return true
+}
+
+/**
+ * R3：连通性割点。
+ *
+ * 对每种颜色构造图 G =「该色格 + 空格」。若空格 v 是 G 的割点，
+ * 且去掉 v 后同一连通块里出现 ≥2 个「含有该色格」的分量，
+ * 那么 v 必须填该色：最终该色格必须四连通，而所有可能路径都在 G 里，
+ * 横跨这些分量的通道只有 v。
+ *
+ * Tarjan 线性判定：DFS 树里去掉 v 后，孩子 u 满足 low[u] >= tin[v] 才是独立分量；
+ * 否则它会经回边和祖先一侧并在一起。
+ */
+function cutPropagate(
+  cells: Int8Array | number[],
+  w: number,
+  h: number,
+  onSet: SetCallback | undefined,
+  markChanged: () => void,
+): boolean {
+  const n = w * h
+  const tin = new Int32Array(n)
+  const low = new Int32Array(n)
+  const parentOf = new Int32Array(n)
+  const subColor = new Int32Array(n)
+  const sepChildCount = new Int32Array(n)
+  const mergedColorSum = new Int32Array(n)
+  const order: number[] = []
+  let timer = 0
+
+  for (const color of [BLACK, WHITE] as const) {
+    tin.fill(-1)
+    const forced: number[] = []
+    const isNode = (i: number): boolean => cells[i] === color || cells[i] === EMPTY
+
+    for (let root = 0; root < n; root++) {
+      if (tin[root] >= 0 || !isNode(root)) continue
+      tin[root] = low[root] = timer++
+      parentOf[root] = -1
+      subColor[root] = cells[root] === color ? 1 : 0
+      sepChildCount[root] = 0
+      mergedColorSum[root] = 0
+      order.length = 0
+      order.push(root)
+      const stack: Array<{ v: number; child: number }> = [{ v: root, child: 0 }]
+
+      while (stack.length) {
+        const frame = stack[stack.length - 1]!
+        const v = frame.v
+        const x = v % w
+        const y = (v / w) | 0
+        const neighbors = [
+          x > 0 ? v - 1 : -1,
+          x + 1 < w ? v + 1 : -1,
+          y > 0 ? v - w : -1,
+          y + 1 < h ? v + w : -1,
+        ]
+        let descended = false
+        for (; frame.child < 4; frame.child++) {
+          const j = neighbors[frame.child]!
+          if (j < 0 || !isNode(j)) continue
+          if (tin[j] < 0) {
+            tin[j] = low[j] = timer++
+            parentOf[j] = v
+            subColor[j] = cells[j] === color ? 1 : 0
+            sepChildCount[j] = 0
+            mergedColorSum[j] = 0
+            order.push(j)
+            stack.push({ v: j, child: 0 })
+            descended = true
+            break
+          }
+          if (j !== parentOf[v] && tin[j] < low[v]) low[v] = tin[j]
+        }
+        if (descended) continue
+
+        stack.pop()
+        const parent = parentOf[v]!
+        if (parent >= 0) {
+          if (low[v] < low[parent]) low[parent] = low[v]
+          subColor[parent] = subColor[parent]! + subColor[v]!
+          if (low[v] >= tin[parent]) {
+            if (subColor[v]! > 0) sepChildCount[parent] = sepChildCount[parent]! + 1
+          } else {
+            mergedColorSum[parent] = mergedColorSum[parent]! + subColor[v]!
+          }
+        }
+      }
+
+      const totalColor = subColor[root]!
+      for (const v of order) {
+        if (cells[v] !== EMPTY) continue
+        let branches = sepChildCount[v]!
+        if (v !== root) {
+          const restColor = totalColor - subColor[v]! + mergedColorSum[v]!
+          if (restColor > 0) branches++
+        }
+        if (branches >= 2) forced.push(v)
+      }
+    }
+
+    for (const v of forced) {
+      if (cells[v] === EMPTY) {
+        cells[v] = color
+        onSet?.(v, color, 'cut')
+        markChanged()
+      } else if (cells[v] !== color) {
+        return false
+      }
+    }
   }
 
   return true
@@ -215,8 +332,10 @@ export function isValidSolution(cells: ArrayLike<number>, w: number, h: number):
     }
   }
 
-  return componentsOf(cells, w, h, BLACK).length === 1 &&
+  return (
+    componentsOf(cells, w, h, BLACK).length === 1 &&
     componentsOf(cells, w, h, WHITE).length === 1
+  )
 }
 
 export interface RuleSolveResult {

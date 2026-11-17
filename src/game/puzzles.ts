@@ -6,9 +6,9 @@
  *   solution = 参考解（1 / 2）
  */
 
-import { RAW_PUZZLES } from './puzzles-data'
-import { IMPORTED_PUZZLES } from './imported-puzzles'
-import { asYinPuzzle, decodeCells, type YinPuzzle, type YinState } from './types'
+import { RAW_PUZZLES } from './puzzles-data.ts'
+import { IMPORTED_PUZZLES } from './imported-puzzles.ts'
+import { asYinPuzzle, decodeCells, type YinPuzzle, type YinState } from './types.ts'
 
 export const builtinPuzzles: YinPuzzle[] = []
 const solutions = new Map<string, number[]>()

@@ -2,9 +2,9 @@
  * 阴阳 —— 实时校验
  */
 
-import type { GameState, Puzzle, ValidationResult } from '../core/types'
-import { componentsOf, hasEmptyNeighbor } from './rules'
-import { asYinPuzzle, asYinState, BLACK, EMPTY, WHITE, type YinResult } from './types'
+import type { GameState, Puzzle, ValidationResult } from '../core/types.ts'
+import { componentsOf, hasEmptyNeighbor } from './rules.ts'
+import { asYinPuzzle, asYinState, BLACK, EMPTY, WHITE, type YinResult } from './types.ts'
 
 export function validate(state: GameState, puzzle: Puzzle): YinResult {
   const s = asYinState(state)
