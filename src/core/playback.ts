@@ -49,6 +49,8 @@ export class LogicPlayer {
   private base: GameState | null = null
   private puzzleId = ''
   private seekTarget: number | null = null
+  private syncingPanel = false
+  private draggingSlider = false
   private saturated = false
 
   private panel: HTMLDivElement | null = null
@@ -165,7 +167,20 @@ export class LogicPlayer {
     this.pauseBtn = panel.querySelector('.logic-pause-btn')
     const jumpBtn = panel.querySelector('.logic-jump-btn') as HTMLButtonElement | null
 
-    this.range?.addEventListener('input', () => this.seek(Number(this.range!.value)))
+    this.range?.addEventListener('pointerdown', () => {
+      this.draggingSlider = true
+    })
+    window.addEventListener('pointerup', () => {
+      this.draggingSlider = false
+    })
+    this.range?.addEventListener('input', () => {
+      // 只响应用户拖动；程序化同步 value 时部分浏览器也会派发 input。
+      if (!this.draggingSlider) return
+      this.seek(Number(this.range!.value))
+    })
+    this.range?.addEventListener('change', () => {
+      if (!this.draggingSlider) this.seek(Number(this.range!.value))
+    })
     number?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault()
@@ -181,6 +196,7 @@ export class LogicPlayer {
     const hasFrames = this.frames.length > 0 && this.base !== null
     this.panel.hidden = !hasFrames
     if (!hasFrames) return
+    this.syncingPanel = true
     if (this.range) {
       this.range.max = String(this.total)
       this.range.value = String(Math.max(0, Math.min(this.total, this.frame)))
@@ -189,6 +205,7 @@ export class LogicPlayer {
       this.stepInput.max = String(this.total)
       this.stepInput.value = String(Math.max(0, Math.min(this.total, this.frame)))
     }
+    this.syncingPanel = false
     if (this.totalLabel) this.totalLabel.textContent = String(this.total)
     if (this.pauseBtn) {
       this.pauseBtn.disabled = false
@@ -230,10 +247,12 @@ export class LogicPlayer {
 
   /** 跳到第 n 帧；回放中会立即重建到目标帧，随后从目标帧继续 */
   private seek(n: number): void {
+    if (this.syncingPanel) return
     if (!this.frames.length || !this.base) return
     const target = Math.max(0, Math.min(this.frames.length, Math.floor(n)))
     this.seekTarget = target
     this.restoreTo(target)
+    this.seekTarget = null
     if (target > 0) {
       const f = this.frames[target - 1]!
       this.hooks.setStatus(
